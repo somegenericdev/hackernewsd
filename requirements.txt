@@ -1,4 +1,7 @@
 backoff==2.2.1
+feedgen==1.0.0
+Flask==3.1.0
+Flask_APScheduler==1.13.1
 jsonpickle==3.2.2
 pyfunctional==1.5.0
 pyquery==2.0.0
