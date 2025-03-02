@@ -1,0 +1,56 @@
+name: release
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+env:
+  PYTHON_VERSION: "3.11"
+  PROGRAM_ENTRYPOINT: 'src/app.py'
+  EXECUTABLE_NAME: 'hackernewsd'
+  BUILD_OUTPUT_PATH: 'dist'
+
+jobs:
+  build-windows:
+    runs-on: windows-2019
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Install Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          architecture: 'x64'
+      - name: Install requirements
+        run: pip install -r requirements.txt
+      - name: Run PyInstaller
+        run: pyinstaller --noconsole --onefile --name=${{ env.EXECUTABLE_NAME }} ${{ env.PROGRAM_ENTRYPOINT }}
+      #- uses: actions/upload-artifact@v2
+      #  with:
+      #    name: Windows_qwiklabs
+      #    path: dist/qwiklab_badge_checker.exe
+
+      - name: ZIP release artifact Windows
+        run: echo $(pwd); echo $(find . -type d); cd ${{ env.BUILD_OUTPUT_PATH }}; zip -r ../${{ env.EXECUTABLE_NAME }}-${{ steps.version.outputs.version }}-win64.zip ./
+
+      - name: GitHub release
+        uses: actions/create-release@v1
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_name: ${{ steps.version.outputs.version }}
+          tag_name: ${{ github.ref }}
+          body: ''
+          draft: false
+          prerelease: false
+
+      - name: GitHub release assets Windows
+        uses: actions/upload-release-asset@v1
+        id: release_assets_2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.release.outputs.upload_url }}
+          asset_path: ${{ env.BUILD_OUTPUT_PATH }}/../${{ env.EXECUTABLE_NAME }}-${{ steps.version.outputs.version }}-win64.zip
+          asset_name: ${{ env.EXECUTABLE_NAME }}-${{ steps.version.outputs.version }}-win64.zip
+          asset_content_type: application/zip
