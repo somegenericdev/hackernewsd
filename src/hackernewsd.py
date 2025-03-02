@@ -7,6 +7,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 import backoff
+import bs4
 import requests
 from feedgen.feed import FeedGenerator
 from functional import seq
@@ -62,14 +63,18 @@ class HackerNewsScraper():
         if(resp.status_code == 503 or html == "Sorry."):
             self.logger.info("Rate limited. Retrying.")
             raise HackernewsRateLimitException("Rate limit occurred.")
-        parser = PyQuery(html)
-        hackerNewsUrls = parser("tr > td.subtext > span.subline > span.age > a")
-        titles = parser(".titleline > a")
-        dates = parser("tr > td.subtext > span.subline > span.age")
 
+        parser = bs4.BeautifulSoup(html, features="lxml")
+        hackerNewsUrls = seq(parser.select("span.age > a")).map(lambda x: "https://news.ycombinator.com/" + x['href']).to_list()
+        titles = seq(parser.select(".titleline > a")).map(lambda x: x.text).to_list()
+        urls = seq(parser.select(".titleline > a")).map(lambda x: x['href']).map(lambda x: "https://news.ycombinator.com/" + x if x.startswith("item?id") else x).to_list()
 
+        dates = seq(parser.select("span.age")).map(lambda x: x['title']).map(lambda x: datetime.fromtimestamp(int(re.findall(r"[0-9]{10,}", x)[0]), timezone.utc)).to_list()
 
-        return seq(zip(titles, hackerNewsUrls, dates)).map(lambda x: HackerNewsStory(x[0].text, x[0].attrib['href'], "https://news.ycombinator.com/" + x[1].attrib['href'], datetime.now(timezone.utc), datetime.fromtimestamp(int(re.findall(r"[0-9]{10,}", x[2].attrib['title'])[0]), timezone.utc)))
+        if not (len(hackerNewsUrls) == len(titles) == len(urls) == len(dates)):
+            raise Exception(f"Error in parsing page {pageNumber}: length of parsed elements is different. Hackernewsurls: {len(hackerNewsUrls)} Titles: {len(titles)} Urls: {len(urls)} Dates: {len(dates)}\n\n#Hackernewsurls\n{hackerNewsUrls}\n\n#Titles\n{titles}\n\n#Urls\n{urls}\n\n#Dates\n{dates}")
+
+        return seq(zip(titles, urls, hackerNewsUrls, dates)).map(lambda x: HackerNewsStory(x[0], x[1], x[2], datetime.now(timezone.utc), x[3])).to_list()
 
 
     def readRcFile(self):
@@ -82,10 +87,10 @@ class HackerNewsScraper():
 
     def generateRss(self, stories, useHackernewsUrl=False):
         fg = FeedGenerator()
-        fg.title('Hackernewsd - HN' if useHackernewsUrl else 'Hackernews - Blog')
+        fg.title('Hackernewsd - HN' if useHackernewsUrl else 'Hackernewsd - Blog')
         fg.link(href='http://localhost:5555', rel='alternate')  #TODO parameterize
         # fg.logo('http://ex.com/logo.jpg')
-        fg.subtitle('Hackernewsd - HN' if useHackernewsUrl else 'Hackernews - Blog')
+        fg.subtitle('Hackernewsd - HN' if useHackernewsUrl else 'Hackernewsd - Blog')
         fg.language('en')
         for story in stories:
             fe = fg.add_entry()
