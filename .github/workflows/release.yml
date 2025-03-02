@@ -32,7 +32,7 @@ jobs:
         run: pip install pyinstaller; pyinstaller --noconsole --onefile --name=${{ env.EXECUTABLE_NAME }} ${{ env.PROGRAM_ENTRYPOINT }}
 
       - name: ZIP release artifact Windows
-        run: echo $(pwd); cd ${{ env.BUILD_OUTPUT_PATH }}; Compress-Archive -Path ./ -DestinationPath ../${{ env.EXECUTABLE_NAME }}-${{ steps.version.outputs.version }}-win64.zip
+        run: echo $(pwd); cd ${{ env.BUILD_OUTPUT_PATH }}; Compress-Archive -Path ./* -DestinationPath ../${{ env.EXECUTABLE_NAME }}-${{ steps.version.outputs.version }}-win64.zip
 
       - name: GitHub release
         uses: actions/create-release@v1
