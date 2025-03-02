@@ -12,6 +12,8 @@ env:
 jobs:
   build-windows:
     runs-on: windows-2019
+    outputs:
+      release-upload-url: ${{ steps.release.outputs.upload_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -57,6 +59,8 @@ jobs:
   build-linux:
     needs: build-windows #this job will run only after build-windows. This way, build-windows creates the Release, and build-linux only adds an asset to it, thus avoiding a race ccondition.
     runs-on: ubuntu-latest
+    env:
+      RELEASE_UPLOAD_URL: ${{ needs.build-windows.outputs.release-upload-url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -83,7 +87,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.release.outputs.upload_url }}
+          upload_url: ${{ env.RELEASE_UPLOAD_URL }}
           asset_path: ${{ env.BUILD_OUTPUT_PATH }}/../${{ env.EXECUTABLE_NAME }}-${{ steps.version.outputs.version }}-linux64.zip
           asset_name: ${{ env.EXECUTABLE_NAME }}-${{ steps.version.outputs.version }}-linux64.zip
           asset_content_type: application/zip
