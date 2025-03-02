@@ -55,6 +55,7 @@ jobs:
           asset_name: ${{ env.EXECUTABLE_NAME }}-${{ steps.version.outputs.version }}-win64.zip
           asset_content_type: application/zip
   build-linux:
+    needs: build-windows #this job will run only after build-windows. This way, build-windows creates the Release, and build-linux only adds an asset to it, thus avoiding a race ccondition.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -75,18 +76,6 @@ jobs:
 
       - name: ZIP release artifact Linux
         run: echo $(pwd); echo $(find . -type d); cd ${{ env.BUILD_OUTPUT_PATH }}; zip -r ../${{ env.EXECUTABLE_NAME }}-${{ steps.version.outputs.version }}-linux64.zip ./
-
-      - name: GitHub release
-        uses: actions/create-release@v1
-        id: release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          release_name: ${{ steps.version.outputs.version }}
-          tag_name: ${{ github.ref }}
-          body: ''
-          draft: false
-          prerelease: false
 
       - name: GitHub release assets Linux
         uses: actions/upload-release-asset@v1
