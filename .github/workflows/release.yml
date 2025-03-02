@@ -22,14 +22,14 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           architecture: 'x64'
+      - name: Get version
+        id: version
+        uses: battila7/get-version-action@v2
+
       - name: Install requirements
         run: pip install -r requirements.txt
       - name: Run PyInstaller
         run: pip install pyinstaller; pyinstaller --noconsole --onefile --name=${{ env.EXECUTABLE_NAME }} ${{ env.PROGRAM_ENTRYPOINT }}
-      #- uses: actions/upload-artifact@v2
-      #  with:
-      #    name: Windows_qwiklabs
-      #    path: dist/qwiklab_badge_checker.exe
 
       - name: ZIP release artifact Windows
         run: echo $(pwd); cd ${{ env.BUILD_OUTPUT_PATH }}; Compress-Archive -Path ./ -DestinationPath ../${{ env.EXECUTABLE_NAME }}-${{ steps.version.outputs.version }}-win64.zip
@@ -69,14 +69,15 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           architecture: 'x64'
+
+      - name: Get version
+        id: version
+        uses: battila7/get-version-action@v2
+
       - name: Install requirements
         run: pip install -r requirements.txt
       - name: Run PyInstaller
         run: pip install pyinstaller; pyinstaller --noconsole --onefile --name=${{ env.EXECUTABLE_NAME }} ${{ env.PROGRAM_ENTRYPOINT }}
-      #- uses: actions/upload-artifact@v2
-      #  with:
-      #    name: Windows_qwiklabs
-      #    path: dist/qwiklab_badge_checker.exe
 
       - name: ZIP release artifact Linux
         run: echo $(pwd); echo $(find . -type d); cd ${{ env.BUILD_OUTPUT_PATH }}; zip -r ../${{ env.EXECUTABLE_NAME }}-${{ steps.version.outputs.version }}-linux64.zip ./
