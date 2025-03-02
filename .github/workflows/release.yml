@@ -23,7 +23,7 @@ jobs:
       - name: Install requirements
         run: pip install -r requirements.txt
       - name: Run PyInstaller
-        run: pyinstaller --noconsole --onefile --name=${{ env.EXECUTABLE_NAME }} ${{ env.PROGRAM_ENTRYPOINT }}
+        run: pip install pyinstaller; pyinstaller --noconsole --onefile --name=${{ env.EXECUTABLE_NAME }} ${{ env.PROGRAM_ENTRYPOINT }}
       #- uses: actions/upload-artifact@v2
       #  with:
       #    name: Windows_qwiklabs
