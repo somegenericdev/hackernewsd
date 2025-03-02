@@ -8,4 +8,3 @@ pyquery==2.0.0
 Requests==2.32.3
 stopwatch.py==2.0.1
 waitress==3.0.2
-win11toast==0.35
