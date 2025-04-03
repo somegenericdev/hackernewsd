@@ -79,7 +79,7 @@ class HackerNewsScraper():
 
     def readRcFile(self):
         rcFilePath = Path.home() / ".hackernewsdrc"
-        with open(rcFilePath, "r") as rcFile:
+        with open(rcFilePath, "r", encoding="utf-8") as rcFile:
             return rcFile.read()
 
 
@@ -100,21 +100,21 @@ class HackerNewsScraper():
 
         rss = fg.rss_str(pretty=True).decode('utf-8')
         rssFilePath = Path.home() / ".hackernewsdrss_hn" if useHackernewsUrl else Path.home() / ".hackernewsdrss"
-        with open(rssFilePath, "w") as rssPath:
+        with open(rssFilePath, "w", encoding="utf-8") as rssPath:
             rssPath.write(rss)
 
 
     def getOldStories(self):
         storiesDbPath = Path.home() / ".hackernewsddb"
         if os.path.exists(storiesDbPath):
-            with open(storiesDbPath, "r") as dbFile:
+            with open(storiesDbPath, "r", encoding="utf-8") as dbFile:
                 return jsonpickle.decode(dbFile.read())
         else:
             return []
 
     def writeOldStories(self, stories):
         storiesDbPath = Path.home() / ".hackernewsddb"
-        with open(storiesDbPath, "w") as dbFile:
+        with open(storiesDbPath, "w", encoding="utf-8") as dbFile:
             dbFile.write(jsonpickle.encode(stories))
 
     def scrape(self):

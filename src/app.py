@@ -21,7 +21,7 @@ scheduler = APScheduler()
 def feed():
     rssPath = Path.home() / ".hackernewsdrss"
     if os.path.exists(rssPath):
-        with open(rssPath, "r") as rss:
+        with open(rssPath, "r", encoding="utf-8") as rss:
             return Response(rss.read(), mimetype='text/xml')
     else:
         return render_template_string('PageNotFound {{ errorCode }}', errorCode='404'), 404
@@ -30,7 +30,7 @@ def feed():
 def feedHn():
     rssPath = Path.home() / ".hackernewsdrss_hn"
     if os.path.exists(rssPath):
-        with open(rssPath, "r") as rss:
+        with open(rssPath, "r", encoding="utf-8") as rss:
             return Response(rss.read(), mimetype='text/xml')
     else:
         return render_template_string('PageNotFound {{ errorCode }}', errorCode='404'), 404
@@ -46,7 +46,7 @@ def initLogger():
     logFilePath = str(Path.home() / ".hackernewsdlog")
 
     if not os.path.exists(logFilePath):
-        with open(logFilePath, "w") as logFile:
+        with open(logFilePath, "w", encoding="utf-8") as logFile:
             logFile.write("")
 
     log_formatter = logging.Formatter('[%(asctime)s %(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
