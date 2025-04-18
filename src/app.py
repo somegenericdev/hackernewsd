@@ -1,5 +1,6 @@
-#TODO parameterize port (int)
-#TODO parameterize notify (bool)
+
+# TODO parameterize notify (bool)
+import json
 import os
 import sys
 from pathlib import Path
@@ -26,6 +27,7 @@ def feed():
     else:
         return render_template_string('PageNotFound {{ errorCode }}', errorCode='404'), 404
 
+
 @app.route('/feed_hn.xml')
 def feedHn():
     rssPath = Path.home() / ".hackernewsdrss_hn"
@@ -42,6 +44,13 @@ def scrapeJob():
     scraper = HackerNewsScraper()
     scraper.scrape()
 
+
+def readRcFile():
+    rcFilePath = Path.home() / ".hackernewsdrc"
+    with open(rcFilePath, "r", encoding="utf-8") as rcFile:
+        return rcFile.read()
+
+
 def initLogger():
     logFilePath = str(Path.home() / ".hackernewsdlog")
 
@@ -50,8 +59,6 @@ def initLogger():
             logFile.write("")
 
     log_formatter = logging.Formatter('[%(asctime)s %(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
-
-
 
     fileHandler = RotatingFileHandler(logFilePath, mode='a', maxBytes=25 * 1024 * 1024,
                                       backupCount=1, encoding=None, delay=0)
@@ -68,9 +75,11 @@ def initLogger():
     rootLogger.addHandler(fileHandler)
     rootLogger.addHandler(consoleHandler)
 
+
 if __name__ == '__main__':
     initLogger()
+    rcFile = json.loads(readRcFile())
     scheduler.init_app(app)
     scheduler.start()
-    serve(app, host="127.0.0.1", port=5555)
-    #app.run(port=5555)
+    serve(app, host=rcFile["host"], port=rcFile["port"])
+    # app.run(port=5555)
