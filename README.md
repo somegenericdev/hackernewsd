@@ -47,8 +47,8 @@ sudo touch hackernewsd.service
 sudo tee -a hackernewsd.service > /dev/null <<EOT
 [Service]
 Type=simple
-ExecStart=/yourDir/hackernewsd
-WorkingDirectory=/yourDir
+ExecStart=$HOME/hackernewsd
+WorkingDirectory=$HOME
 Restart=always
 RestartSec=5
 StandardOutput=syslog
@@ -74,5 +74,6 @@ pip install -U pyinstaller
 ```
 pyinstaller --noconsole --onefile src/app.py
 ```
+
 
 
