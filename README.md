@@ -64,8 +64,7 @@ sudo systemctl enable hackernewsd
 
 1. Install the dependency list
 ```
- pip install -r requirements.txt #windows
- pip install $(cat requirements.txt | grep --invert-match "win11toast") #linux
+ pip install -r requirements.txt 
 ```
 2. Install pyinstaller
 ```
@@ -75,4 +74,5 @@ pip install -U pyinstaller
 ```
 pyinstaller --noconsole --onefile src/app.py
 ```
+
 
