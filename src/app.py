@@ -1,5 +1,3 @@
-
-# TODO parameterize notify (bool)
 import json
 import os
 import sys
