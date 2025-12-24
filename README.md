@@ -16,7 +16,7 @@ Replace the queries in the example below with whatever keywords you want the dae
 }
 ```
 
-2. Download the [latest Release](https://github.com/somegenericdev/hackernewsd) and extract the executable
+2. Download the [latest release](https://github.com/somegenericdev/hackernewsd) and extract the executable
 3. Move the executable to the startup application folder (C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup)
 
 # Install - Linux
@@ -75,3 +75,4 @@ pip install -U pyinstaller
 ```
 pyinstaller --noconsole --onefile src/app.py
 ```
+
