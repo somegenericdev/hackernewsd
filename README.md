@@ -1,5 +1,7 @@
 ﻿# hackernewsd
 
+![image info](logo.png)
+
 Daemon that exposes an RSS feed containing any stories that match your list of queries.
 
 # Install - Windows
@@ -84,6 +86,7 @@ pip install -U pyinstaller
 ```
 pyinstaller --noconsole --onefile src/app.py
 ```
+
 
 
 
