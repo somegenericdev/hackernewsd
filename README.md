@@ -59,6 +59,17 @@ sudo systemctl start hackernewsd
 sudo systemctl enable hackernewsd
 ```
 
+# Usage
+
+Add the following two feeds to your RSS reader of choice:
+
+```
+http://127.0.0.1:5555/feed.xml
+http://127.0.0.1:5555/feed_hn.xml
+```
+
+`feed.xml` will point to the URL of the stories (usually an external blog), while `feed_hn.xml` will point to the Hackernews URL itself.
+
 # Build from source
 
 1. Install the dependency list
@@ -73,6 +84,7 @@ pip install -U pyinstaller
 ```
 pyinstaller --noconsole --onefile src/app.py
 ```
+
 
 
 
