@@ -1,16 +1,17 @@
 import json
 import os
 import sys
+from enum import Enum
 from pathlib import Path
-
 from flask import Flask, render_template_string, Response
 from flask_apscheduler import APScheduler
-
 from hackernewsd import HackerNewsScraper
 from waitress import serve
 import logging
 from logging import handlers
 from logging.handlers import RotatingFileHandler
+from peewee import SqliteDatabase
+from models import BaseModel, Story
 
 app = Flask(__name__)
 scheduler = APScheduler()
@@ -73,9 +74,16 @@ def initLogger():
     rootLogger.addHandler(fileHandler)
     rootLogger.addHandler(consoleHandler)
 
+def initDb():
+    db = SqliteDatabase(Path.home() / "hnd.db")
+    BaseModel._meta.database.initialize(db)
+    db.connect()
+    db.create_tables([Story])
+
 
 if __name__ == '__main__':
     initLogger()
+    initDb()
     rcFile = json.loads(readRcFile())
     scheduler.init_app(app)
     scheduler.start()
