@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from ssl import SSLError
 import backoff
 import requests
 from feedgen.feed import FeedGenerator
@@ -9,8 +10,8 @@ from functional import seq
 from stopwatch import Stopwatch
 from models import Story, StoryType
 from types import SimpleNamespace
-
 from dtos import RateLimitException, StoryDto
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class HackerNewsScraper():
@@ -21,7 +22,7 @@ class HackerNewsScraper():
         rootLogger = logging.getLogger('root')
         return rootLogger
 
-    @backoff.on_exception(backoff.fibo, RateLimitException)
+    @backoff.on_exception(backoff.fibo, SSLError)
     def get_stories(self) -> list[StoryDto]:
         self.logger.info("Getting Hackernews' top stories")
         resp = requests.get("https://hacker-news.firebaseio.com/v0/topstories.json", timeout=30)
@@ -29,9 +30,17 @@ class HackerNewsScraper():
         json_res = resp.content.decode('utf-8')
         story_ids = json.loads(json_res, object_hook=lambda d: SimpleNamespace(**d))
 
-        return seq(story_ids).map(lambda i: self.get_story(i)).to_list()
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(self.get_story, story_id) for story_id in story_ids]
+            results = []
+            for future in as_completed(futures):
+                results.append(future.result())
+            return results
 
-    @backoff.on_exception(backoff.fibo, RateLimitException)
+
+
+
+    @backoff.on_exception(backoff.fibo, SSLError)
     def get_story(self, storyId) -> StoryDto:
         self.logger.info(f"Getting Hackernews story #{storyId}")
         resp = requests.get(f"https://hacker-news.firebaseio.com/v0/item/{storyId}.json", timeout=30)
