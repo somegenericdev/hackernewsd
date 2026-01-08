@@ -7,7 +7,8 @@ Daemon that exposes an RSS feed containing any Hackernews or Lobsters stories th
 # Install - Windows
 
 1. Create in your home folder (C:\Users\YOUR_USERNAME) a file called ".hackernewsdrc". <br> 
-Replace the queries in the example below with whatever keywords you want the daemon to look for
+Replace the queries in the example below with whatever keywords you want the daemon to look for. <br>
+Should you want to expose the daemon's web API to the internet you can set the `host` parameter to `0.0.0.0`.
 
 ```
 {
@@ -23,7 +24,9 @@ Replace the queries in the example below with whatever keywords you want the dae
 # Install - Linux
 
 1. Create in your home folder (/home/YOUR_USERNAME) a file called ".hackernewsdrc". <br> 
-Replace the queries in the example below with whatever keywords you want the daemon to look for
+Replace the queries in the example below with whatever keywords you want the daemon to look for. <br>
+Should you want to expose the daemon's web API to the internet you can set the `host` parameter to `0.0.0.0`.
+
 
 ```
 {
@@ -32,8 +35,6 @@ Replace the queries in the example below with whatever keywords you want the dae
 	"port": 5555
 }
 ```
-
-Should you want to expose the daemon's web API to the internet, you can set the `host` parameter to `0.0.0.0`.
 
 2. Download the binary
 ```
