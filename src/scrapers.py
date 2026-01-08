@@ -88,7 +88,7 @@ class HackerNewsScraper():
             return []
 
     def entityToDto(self, entity : Story) -> StoryDto:
-        return StoryDto(entity.title, entity.url, entity.hnurl, entity.last_seen, entity.posted_date)
+        return StoryDto(entity.title, entity.url, entity.hnurl, datetime.fromisoformat(entity.last_seen).astimezone(timezone.utc), datetime.fromisoformat(entity.posted_date).astimezone(timezone.utc))
 
     def dtoToEntity(self, dto:StoryDto) -> Story:
         return Story(title=dto.title, url=dto.url,hnurl=dto.hackerNewsUrl, last_seen = dto.lastSeen, posted_date=dto.postedDate, type = StoryType.Hackernews.value)
@@ -192,7 +192,7 @@ class LobstersScraper():
             return []
 
     def entityToDto(self, entity : Story) -> StoryDto:
-        return StoryDto(entity.title, entity.url, entity.hnurl, entity.last_seen, entity.posted_date)
+        return StoryDto(entity.title, entity.url, entity.hnurl, datetime.fromisoformat(entity.last_seen).astimezone(timezone.utc),datetime.fromisoformat(entity.posted_date).astimezone(timezone.utc))
 
     def dtoToEntity(self, dto:StoryDto) -> Story:
         return Story(title=dto.title, url=dto.url,hnurl=dto.hackerNewsUrl, last_seen = dto.lastSeen, posted_date=dto.postedDate, type = StoryType.Lobsters.value)
