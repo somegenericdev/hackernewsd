@@ -38,7 +38,7 @@ Should you want to expose the daemon's web API to the internet, you can set the 
 2. Download the binary
 ```
 cd ~
-curl -JOL "https://github.com/somegenericdev/hackernewsd/releases/download/v2.0.1/hackernewsd-v2.0.1-linux64.zip" && unzip hackernewsd-v*-linux64.zip && sudo mv hackernewsd /bin/hackernewsd
+curl -JOL "https://github.com/somegenericdev/hackernewsd/releases/download/v2.0.2/hackernewsd-v2.0.2-linux64.zip" && unzip hackernewsd-v*-linux64.zip && sudo mv hackernewsd /bin/hackernewsd
 chmod +x /bin/hackernewsd
 chown $USER:$USER /bin/hackernewsd
 ```
