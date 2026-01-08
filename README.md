@@ -2,7 +2,7 @@
 
 ![image info](logo.png)
 
-Daemon that exposes an RSS feed containing any stories that match your list of queries.
+Daemon that exposes an RSS feed containing any Hackernews or Lobsters stories that match your list of queries.
 
 # Install - Windows
 
