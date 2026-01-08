@@ -104,6 +104,7 @@ def initDb():
 
 
 if __name__ == '__main__':
+    print(f"Starting Hackernewsd. Python version: {sys.version}")
     initLogger()
     initDb()
     rcFile = json.loads(readRcFile())

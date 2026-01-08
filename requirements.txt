@@ -1,10 +1,10 @@
 backoff==2.2.1
 beautifulsoup4==4.12.3
 feedgen==1.0.0
-Flask==3.1.0
+Flask==3.1.1
 Flask_APScheduler==1.13.1
 pyfunctional==1.5.0
-Requests==2.32.3
+Requests==2.32.4
 stopwatch.py==2.0.1
 waitress==3.0.2
 peewee==3.18.3
