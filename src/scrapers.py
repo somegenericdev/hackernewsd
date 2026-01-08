@@ -81,7 +81,6 @@ class HackerNewsScraper():
     def get_old_stories(self):
         try:
             all_stories = list(Story.select().where(Story.type == StoryType.Hackernews.value))
-            print(all_stories)
             return seq(all_stories).map(lambda s: self.entity_to_dto(s)).to_list()
         except Exception as e:
             return []
@@ -177,7 +176,6 @@ class LobstersScraper():
     def get_old_stories(self):
         try:
             all_stories = list(Story.select().where(Story.type == StoryType.Lobsters.value))
-            print(all_stories)
             return seq(all_stories).map(lambda s: self.entity_to_dto(s)).to_list()
         except Exception as e:
             return []
@@ -206,7 +204,7 @@ class LobstersScraper():
             old_stories = self.get_old_stories()
             rc_file = self.read_rc_file()
             queries = json.loads(rc_file)["queries"]
-            all_current_stories = seq.range(1, 30).flat_map(lambda p: self.process_page(p)).to_list()
+            all_current_stories = seq.range(1, 30).flat_map(lambda p: self.process_page(p)).distinct().to_list()
             self.update_last_seen_dates(all_current_stories)
             filtered_stories = seq(all_current_stories).filter(lambda x: seq(queries).map(lambda q: x.title.lower().find(q.lower()) != -1).any()).to_list()
             diff_stories = seq(filtered_stories).filter(lambda x: not seq(old_stories).filter(lambda y: y == x).any()).to_list()

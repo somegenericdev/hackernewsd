@@ -8,6 +8,8 @@ class StoryDto:
 
     def __eq__(self, other):
         return self.url == other.url and self.posted_date == other.posted_date
+    def __hash__(self):
+        return hash((self.url, self.posted_date))
 
 class RateLimitException(Exception):
     pass
