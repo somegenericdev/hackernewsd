@@ -33,10 +33,12 @@ Replace the queries in the example below with whatever keywords you want the dae
 }
 ```
 
+Should you want to expose the daemon's web API to the internet, you can set the `host` parameter to `0.0.0.0`.
+
 2. Download the binary
 ```
 cd ~
-curl -JOL "https://github.com/somegenericdev/hackernewsd/releases/download/v1.0.2/hackernewsd-v1.0.2-linux64.zip" && unzip hackernewsd-v*-linux64.zip && sudo mv hackernewsd /bin/hackernewsd
+curl -JOL "https://github.com/somegenericdev/hackernewsd/releases/download/v2.0.1/hackernewsd-v2.0.1-linux64.zip" && unzip hackernewsd-v*-linux64.zip && sudo mv hackernewsd /bin/hackernewsd
 chmod +x /bin/hackernewsd
 chown $USER:$USER /bin/hackernewsd
 ```
@@ -63,14 +65,16 @@ sudo systemctl enable hackernewsd
 
 # Usage
 
-Add the following two feeds to your RSS reader of choice:
+The daemon exposes 4 RSS feeds (2 for Hackernews and 2 for Lobsters), which you can add to your RSS reader of choice:
 
 ```
-http://127.0.0.1:5555/feed.xml
+http://127.0.0.1:5555/feed_hn_blog.xml
 http://127.0.0.1:5555/feed_hn.xml
+http://127.0.0.1:5555/feed_lobsters_blog.xml
+http://127.0.0.1:5555/feed_lobsters.xml
 ```
 
-`feed.xml` will point to the URL of the stories (usually an external blog), while `feed_hn.xml` will point to the Hackernews URL itself.
+The `_blog` feeds point to the URL of the stories (usually an external blog), while the other ones point to the Hackernews/Lobsters URL itself.
 
 # Build from source
 
