@@ -9,10 +9,8 @@ import requests
 from feedgen.feed import FeedGenerator
 from functional import seq
 from stopwatch import Stopwatch
-
 from models import Story, StoryType
 from types import SimpleNamespace
-
 from dtos import RateLimitException, StoryDto
 
 

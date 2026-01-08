@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from flask import Flask, render_template_string, Response
@@ -57,7 +58,7 @@ def feedLobsters():
         return render_template_string('PageNotFound {{ errorCode }}', errorCode='404'), 404
 
 
-@scheduler.task('interval', id='scrapeJob', seconds=600, max_instances=1)
+@scheduler.task('interval', id='scrapeJob', seconds=900, max_instances=1, next_run_time=datetime.now())
 def scrapeJob():
     print('Executing scraping job.')
     hnScraper = HackerNewsScraper()
