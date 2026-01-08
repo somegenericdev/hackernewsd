@@ -122,7 +122,6 @@ class HackerNewsScraper():
             self.logger.info(f"It took {str(stopwatch)} for a full cycle for Hackernews.")
         except Exception as e:
             self.logger.error(f"Unhandled exception occurred", exc_info=True)
-            print(e)
 
 
 class LobstersScraper():
@@ -217,4 +216,3 @@ class LobstersScraper():
             self.logger.info(f"It took {str(stopwatch)} for a full cycle for Lobsters.")
         except Exception as e:
             self.logger.error(f"Unhandled exception occurred", exc_info=True)
-            print(e)

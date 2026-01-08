@@ -60,7 +60,8 @@ def feed_lobsters():
 
 @scheduler.task('interval', id='scrapeJob', seconds=900, max_instances=1, next_run_time=datetime.now())
 def scrape_job():
-    print('Executing scraping job.')
+    logger = get_logger()
+    logger.info('Executing scraping job.')
     hn_scraper = HackerNewsScraper()
     hn_scraper.scrape()
     lobsters_scraper = LobstersScraper()
@@ -83,7 +84,7 @@ def init_logger():
     log_formatter = logging.Formatter('[%(asctime)s %(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
 
     file_handler = RotatingFileHandler(log_file_path, mode='a', maxBytes=25 * 1024 * 1024,
-                                      backupCount=1, encoding=None, delay=0)
+                                       backupCount=1, encoding=None, delay=0)
     file_handler.setFormatter(log_formatter)
     file_handler.setLevel(logging.INFO)
 
@@ -97,6 +98,7 @@ def init_logger():
     rootLogger.addHandler(file_handler)
     rootLogger.addHandler(consoleHandler)
 
+
 def init_db():
     db = SqliteDatabase(Path.home() / "hnd.db")
     BaseModel._meta.database.initialize(db)
@@ -104,10 +106,16 @@ def init_db():
     db.create_tables([Story])
 
 
+def get_logger():
+    root_logger = logging.getLogger('root')
+    return root_logger
+
+
 if __name__ == '__main__':
-    print(f"Starting Hackernewsd. Python version: {sys.version}")
     init_logger()
     init_db()
+    logger = get_logger()
+    logger.info(f"Starting Hackernewsd. Python version: {sys.version}")
     rc_file = json.loads(read_rc_file())
     scheduler.init_app(app)
     scheduler.start()
