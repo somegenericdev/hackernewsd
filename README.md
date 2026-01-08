@@ -50,17 +50,20 @@ sudo touch hackernewsd.service
 sudo tee -a hackernewsd.service > /dev/null <<EOT
 [Service]
 Type=simple
-ExecStart=$HOME/hackernewsd
+ExecStart=/bin/hackernewsd
 WorkingDirectory=$HOME
 Restart=always
 RestartSec=5
 StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=%n
+User=$USER
+Group=$USER
 EOT
 
 sudo systemctl start hackernewsd
-sudo systemctl enable hackernewsd
+sudo ln -s /etc/systemd/system/hackernewsd.service /etc/systemd/system/multi-user.target.wants/hackernewsd.service
+sudo systemctl daemon-reload
 ```
 
 # Usage
