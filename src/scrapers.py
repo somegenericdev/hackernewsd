@@ -1,16 +1,15 @@
 import json
 import logging
-import re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import backoff
-import bs4
 import requests
 from feedgen.feed import FeedGenerator
 from functional import seq
 from stopwatch import Stopwatch
 from models import Story, StoryType
 from types import SimpleNamespace
+
 from dtos import RateLimitException, StoryDto
 
 
@@ -18,101 +17,98 @@ class HackerNewsScraper():
     def __init__(self):
         pass
 
-    def getLogger(self):
+    def get_logger(self):
         rootLogger = logging.getLogger('root')
         return rootLogger
 
+    @backoff.on_exception(backoff.fibo, RateLimitException)
+    def get_stories(self) -> list[StoryDto]:
+        self.logger.info("Getting Hackernews' top stories")
+        resp = requests.get("https://hacker-news.firebaseio.com/v0/topstories.json", timeout=30)
 
+        json_res = resp.content.decode('utf-8')
+        story_ids = json.loads(json_res, object_hook=lambda d: SimpleNamespace(**d))
+
+        return seq(story_ids).map(lambda i: self.get_story(i)).to_list()
 
     @backoff.on_exception(backoff.fibo, RateLimitException)
-    def processPage(self, pageNumber):
-        self.logger.info(f"Getting page {pageNumber}")
+    def get_story(self, storyId) -> StoryDto:
+        self.logger.info(f"Getting Hackernews story #{storyId}")
+        resp = requests.get(f"https://hacker-news.firebaseio.com/v0/item/{storyId}.json", timeout=30)
+        json_res = resp.content.decode('utf-8')
+        json_obj = json.loads(json_res, object_hook=lambda d: SimpleNamespace(**d))
+        url = getattr(json_obj, "url", None)
+        return StoryDto(json_obj.title, None if url == "" else url, f"https://news.ycombinator.com/item?id={json_obj.id}", datetime.now(timezone.utc), datetime.fromtimestamp(json_obj.time, timezone.utc))
 
-        resp = requests.get(f"https://news.ycombinator.com/news?p={pageNumber}", timeout=30)
-        html = resp.content.decode('utf-8')
-        if(resp.status_code == 503 or html == "Sorry."):
-            self.logger.info("Rate limited. Retrying.")
-            raise RateLimitException("Rate limit occurred.")
+    def read_rc_file(self):
+        rc_file_path = Path.home() / ".hackernewsdrc"
+        with open(rc_file_path, "r", encoding="utf-8") as rc_file:
+            return rc_file.read()
 
-        parser = bs4.BeautifulSoup(html, features="lxml")
-        hackerNewsUrls = seq(parser.select("span.age > a")).map(lambda x: "https://news.ycombinator.com/" + x['href']).to_list()
-        titles = seq(parser.select(".titleline > a")).map(lambda x: x.text).to_list()
-        urls = seq(parser.select(".titleline > a")).map(lambda x: x['href']).map(lambda x: "https://news.ycombinator.com/" + x if x.startswith("item?id") else x).to_list()
-
-        dates = seq(parser.select("span.age")).map(lambda x: x['title']).map(lambda x: datetime.fromtimestamp(int(re.findall(r"[0-9]{10,}", x)[0]), timezone.utc)).to_list()
-
-        if not (len(hackerNewsUrls) == len(titles) == len(urls) == len(dates)):
-            raise Exception(f"Error in parsing page {pageNumber}: length of parsed elements is different. Hackernewsurls: {len(hackerNewsUrls)} Titles: {len(titles)} Urls: {len(urls)} Dates: {len(dates)}\n\n#Hackernewsurls\n{hackerNewsUrls}\n\n#Titles\n{titles}\n\n#Urls\n{urls}\n\n#Dates\n{dates}")
-
-        return seq(zip(titles, urls, hackerNewsUrls, dates)).map(lambda x: StoryDto(x[0], x[1], x[2], datetime.now(timezone.utc), x[3])).to_list()
-
-
-    def readRcFile(self):
-        rcFilePath = Path.home() / ".hackernewsdrc"
-        with open(rcFilePath, "r", encoding="utf-8") as rcFile:
-            return rcFile.read()
-
-
-
-
-    def generateRss(self, stories, useHackernewsUrl=False):
+    def generate_rss(self, stories, use_hackernews_url=False):
         fg = FeedGenerator()
-        fg.title('Hackernewsd - HN' if useHackernewsUrl else 'Hackernewsd - HN (Blog)')
-        fg.link(href='http://localhost:5555', rel='alternate')  #TODO parameterize
+        fg.title('Hackernewsd - HN' if use_hackernews_url else 'Hackernewsd - HN (Blog)')
+        fg.link(href='http://localhost:5555', rel='alternate')  # TODO parameterize
         # fg.logo('http://ex.com/logo.jpg')
-        fg.subtitle('Hackernewsd - HN' if useHackernewsUrl else 'Hackernewsd - HN (Blog)')
+        fg.subtitle('Hackernewsd - HN' if use_hackernews_url else 'Hackernewsd - HN (Blog)')
         fg.language('en')
         for story in stories:
+            if not use_hackernews_url and story.url == None:
+                continue
+
             fe = fg.add_entry()
             fe.title(story.title)
-            fe.published(story.postedDate)
-            fe.link(href=story.hackerNewsUrl if useHackernewsUrl else story.url)
+            fe.published(story.posted_date)
+            fe.link(href=story.hacker_news_url if use_hackernews_url else story.url)
 
         rss = fg.rss_str(pretty=True).decode('utf-8')
-        rssFilePath = Path.home() / ".hackernewsdrss_hn" if useHackernewsUrl else Path.home() / ".hackernewsdrss_hn_blog"
-        with open(rssFilePath, "w", encoding="utf-8") as rssPath:
-            rssPath.write(rss)
+        rss_file_path = Path.home() / ".hackernewsdrss_hn" if use_hackernews_url else Path.home() / ".hackernewsdrss_hn_blog"
+        with open(rss_file_path, "w", encoding="utf-8") as rss_path:
+            rss_path.write(rss)
 
-
-    def cleanupOldStories(self):
+    def cleanup_old_stories(self):
         Story.delete().where(Story.last_seen < datetime.now(timezone.utc) - timedelta(days=7)).execute()
 
-    def getOldStories(self):
+    def get_old_stories(self):
         try:
             all_stories = list(Story.select().where(Story.type == StoryType.Hackernews.value))
             print(all_stories)
-            return seq(all_stories).map(lambda s: self.entityToDto(s)).to_list()
+            return seq(all_stories).map(lambda s: self.entity_to_dto(s)).to_list()
         except Exception as e:
             return []
 
-    def entityToDto(self, entity : Story) -> StoryDto:
+    def entity_to_dto(self, entity: Story) -> StoryDto:
         return StoryDto(entity.title, entity.url, entity.hnurl, datetime.fromisoformat(entity.last_seen).astimezone(timezone.utc), datetime.fromisoformat(entity.posted_date).astimezone(timezone.utc))
 
-    def dtoToEntity(self, dto:StoryDto) -> Story:
-        return Story(title=dto.title, url=dto.url,hnurl=dto.hackerNewsUrl, last_seen = dto.lastSeen, posted_date=dto.postedDate, type = StoryType.Hackernews.value)
+    def dto_to_entity(self, dto: StoryDto) -> Story:
+        return Story(title=dto.title, url=dto.url, hnurl=dto.hacker_news_url, last_seen=dto.last_seen, posted_date=dto.posted_date, type=StoryType.Hackernews.value)
 
-
-    def insertNewStories(self, stories):
+    def insert_new_stories(self, stories):
         for s in stories:
-            entity = self.dtoToEntity(s)
+            entity = self.dto_to_entity(s)
             entity.save()
 
+    def update_last_seen_dates(self, current_stories: list[StoryDto]):
+        for story in current_stories:
+            Story.update(last_seen=datetime.now(timezone.utc)).where((Story.type == StoryType.Hackernews.value) & (Story.hnurl == story.hacker_news_url) & (Story.posted_date == story.posted_date)).execute()
+
     def scrape(self):
-        self.logger = self.getLogger()
+        self.logger = self.get_logger()
 
         try:
             stopwatch = Stopwatch()
-            self.cleanupOldStories()
-            oldStories = self.getOldStories()
-            rcFile = self.readRcFile()
-            queries = json.loads(rcFile)["queries"]
-            allCurrentStories = seq.range(1, 30).flat_map(lambda p: self.processPage(p)).to_list()
-            filteredStories = seq(allCurrentStories).filter(lambda x: seq(queries).map(lambda q: x.title.lower().find(q.lower()) != -1).any()).to_list()
-            diffStories = seq(filteredStories).filter(lambda x: not seq(oldStories).filter(lambda y: y == x).any()).to_list()
-            self.insertNewStories(diffStories)
+            self.cleanup_old_stories()
+            old_stories = self.get_old_stories()
+            rc_file = self.read_rc_file()
+            queries = json.loads(rc_file)["queries"]
+            all_current_stories = self.get_stories()
+            self.update_last_seen_dates(all_current_stories)
+            filtered_stories = seq(all_current_stories).filter(lambda x: seq(queries).map(lambda q: x.title.lower().find(q.lower()) != -1).any()).to_list()
+            diff_stories = seq(filtered_stories).filter(lambda x: not seq(old_stories).filter(lambda y: y == x).any()).to_list()
+            self.insert_new_stories(diff_stories)
 
-            self.generateRss(self.getOldStories())
-            self.generateRss(self.getOldStories(), True)
+            self.generate_rss(self.get_old_stories())
+            self.generate_rss(self.get_old_stories(), True)
 
             stopwatch.stop()
             self.logger.info(f"It took {str(stopwatch)} for a full cycle for Hackernews.")
@@ -121,27 +117,19 @@ class HackerNewsScraper():
             print(e)
 
 
-
-
-
-
-
-
 class LobstersScraper():
     def __init__(self):
         pass
 
-    def getLogger(self):
-        rootLogger = logging.getLogger('root')
-        return rootLogger
-
-
+    def get_logger(self):
+        root_logger = logging.getLogger('root')
+        return root_logger
 
     @backoff.on_exception(backoff.fibo, RateLimitException)
-    def  processPage(self, pageNumber) -> list[StoryDto]:
-        self.logger.info(f"Getting page {pageNumber}")
+    def process_page(self, page_number) -> list[StoryDto]:
+        self.logger.info(f"Getting page {page_number}")
 
-        resp = requests.get(f"https://lobste.rs/page/{pageNumber}.json", timeout=30)
+        resp = requests.get(f"https://lobste.rs/page/{page_number}.json", timeout=30)
         if (resp.status_code == 429):
             self.logger.info("Rate limited. Retrying.")
             raise RateLimitException("Rate limit occurred.")
@@ -151,72 +139,72 @@ class LobstersScraper():
         json_obj = json.loads(json_res, object_hook=lambda d: SimpleNamespace(**d))
         return seq(json_obj).map(lambda s: StoryDto(s.title, s.url, s.comments_url, datetime.now(timezone.utc), datetime.fromisoformat(s.created_at).astimezone(timezone.utc))).to_list()
 
-    def readRcFile(self):
-        rcFilePath = Path.home() / ".hackernewsdrc"
-        with open(rcFilePath, "r", encoding="utf-8") as rcFile:
-            return rcFile.read()
+    def read_rc_file(self):
+        rc_file_path = Path.home() / ".hackernewsdrc"
+        with open(rc_file_path, "r", encoding="utf-8") as rc_file:
+            return rc_file.read()
 
-
-
-
-    def generateRss(self, stories, useHackernewsUrl=False):
+    def generate_rss(self, stories, use_hackernews_url=False):
         fg = FeedGenerator()
-        fg.title('Hackernewsd - Lobsters' if useHackernewsUrl else 'Hackernewsd - Lobsters (Blog)')
-        fg.link(href='http://localhost:5555', rel='alternate')  #TODO parameterize
+        fg.title('Hackernewsd - Lobsters' if use_hackernews_url else 'Hackernewsd - Lobsters (Blog)')
+        fg.link(href='http://localhost:5555', rel='alternate')  # TODO parameterize
         # fg.logo('http://ex.com/logo.jpg')
-        fg.subtitle('Hackernewsd - Lobsters' if useHackernewsUrl else 'Hackernewsd - Lobsters (Blog)')
+        fg.subtitle('Hackernewsd - Lobsters' if use_hackernews_url else 'Hackernewsd - Lobsters (Blog)')
         fg.language('en')
         for story in stories:
             fe = fg.add_entry()
             fe.title(story.title)
-            fe.published(story.postedDate)
-            fe.link(href=story.hackerNewsUrl if useHackernewsUrl else story.url)
+            fe.published(story.posted_date)
+            fe.link(href=story.hacker_news_url if use_hackernews_url else story.url)
 
         rss = fg.rss_str(pretty=True).decode('utf-8')
-        rssFilePath = Path.home() / ".hackernewsdrss_lobsters" if useHackernewsUrl else Path.home() / ".hackernewsdrss_lobsters_blog"
-        with open(rssFilePath, "w", encoding="utf-8") as rssPath:
-            rssPath.write(rss)
+        rss_file_path = Path.home() / ".hackernewsdrss_lobsters" if use_hackernews_url else Path.home() / ".hackernewsdrss_lobsters_blog"
+        with open(rss_file_path, "w", encoding="utf-8") as rss_path:
+            rss_path.write(rss)
 
-
-    def cleanupOldStories(self):
+    def cleanup_old_stories(self):
         Story.delete().where(Story.last_seen < datetime.now(timezone.utc) - timedelta(days=7)).execute()
 
-    def getOldStories(self):
+    def get_old_stories(self):
         try:
             all_stories = list(Story.select().where(Story.type == StoryType.Lobsters.value))
             print(all_stories)
-            return seq(all_stories).map(lambda s: self.entityToDto(s)).to_list()
+            return seq(all_stories).map(lambda s: self.entity_to_dto(s)).to_list()
         except Exception as e:
             return []
 
-    def entityToDto(self, entity : Story) -> StoryDto:
-        return StoryDto(entity.title, entity.url, entity.hnurl, datetime.fromisoformat(entity.last_seen).astimezone(timezone.utc),datetime.fromisoformat(entity.posted_date).astimezone(timezone.utc))
+    def entity_to_dto(self, entity: Story) -> StoryDto:
+        return StoryDto(entity.title, entity.url, entity.hnurl, datetime.fromisoformat(entity.last_seen).astimezone(timezone.utc), datetime.fromisoformat(entity.posted_date).astimezone(timezone.utc))
 
-    def dtoToEntity(self, dto:StoryDto) -> Story:
-        return Story(title=dto.title, url=dto.url,hnurl=dto.hackerNewsUrl, last_seen = dto.lastSeen, posted_date=dto.postedDate, type = StoryType.Lobsters.value)
+    def dto_to_entity(self, dto: StoryDto) -> Story:
+        return Story(title=dto.title, url=dto.url, hnurl=dto.hacker_news_url, last_seen=dto.last_seen, posted_date=dto.posted_date, type=StoryType.Lobsters.value)
 
-
-    def insertNewStories(self, stories):
+    def insert_new_stories(self, stories):
         for s in stories:
-            entity = self.dtoToEntity(s)
+            entity = self.dto_to_entity(s)
             entity.save()
 
+    def update_last_seen_dates(self, current_stories: list[StoryDto]):
+        for story in current_stories:
+            Story.update(last_seen=datetime.now(timezone.utc)).where((Story.type == StoryType.Lobsters.value) & (Story.hnurl == story.hacker_news_url) & (Story.posted_date == story.posted_date)).execute()
+
     def scrape(self):
-        self.logger = self.getLogger()
+        self.logger = self.get_logger()
 
         try:
             stopwatch = Stopwatch()
-            self.cleanupOldStories()
-            oldStories = self.getOldStories()
-            rcFile = self.readRcFile()
-            queries = json.loads(rcFile)["queries"]
-            allCurrentStories = seq.range(1, 30).flat_map(lambda p: self.processPage(p)).to_list()
-            filteredStories = seq(allCurrentStories).filter(lambda x: seq(queries).map(lambda q: x.title.lower().find(q.lower()) != -1).any()).to_list()
-            diffStories = seq(filteredStories).filter(lambda x: not seq(oldStories).filter(lambda y: y == x).any()).to_list()
-            self.insertNewStories(diffStories)
+            self.cleanup_old_stories()
+            old_stories = self.get_old_stories()
+            rc_file = self.read_rc_file()
+            queries = json.loads(rc_file)["queries"]
+            all_current_stories = seq.range(1, 30).flat_map(lambda p: self.process_page(p)).to_list()
+            self.update_last_seen_dates(all_current_stories)
+            filtered_stories = seq(all_current_stories).filter(lambda x: seq(queries).map(lambda q: x.title.lower().find(q.lower()) != -1).any()).to_list()
+            diff_stories = seq(filtered_stories).filter(lambda x: not seq(old_stories).filter(lambda y: y == x).any()).to_list()
+            self.insert_new_stories(diff_stories)
 
-            self.generateRss(self.getOldStories())
-            self.generateRss(self.getOldStories(), True)
+            self.generate_rss(self.get_old_stories())
+            self.generate_rss(self.get_old_stories(), True)
 
             stopwatch.stop()
             self.logger.info(f"It took {str(stopwatch)} for a full cycle for Lobsters.")

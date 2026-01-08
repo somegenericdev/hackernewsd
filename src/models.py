@@ -13,7 +13,7 @@ class StoryType(Enum):
 class Story(BaseModel):
     id = AutoField()   #autoincrement
     title = CharField()
-    url = CharField()
+    url = CharField(null=True)
     hnurl = CharField()
     last_seen = DateTimeField()
     posted_date = DateTimeField()

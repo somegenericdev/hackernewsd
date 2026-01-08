@@ -1,13 +1,13 @@
 class StoryDto:
-    def __init__(self, _title, _url, _hackerNewsUrl, _lastSeen, _postedDate):
+    def __init__(self, _title, _url, _hacker_news_url, _last_seen, _posted_date):
         self.title = _title
         self.url = _url
-        self.hackerNewsUrl = _hackerNewsUrl
-        self.lastSeen = _lastSeen
-        self.postedDate = _postedDate
+        self.hacker_news_url = _hacker_news_url
+        self.last_seen = _last_seen
+        self.posted_date = _posted_date
 
     def __eq__(self, other):
-        return self.url == other.url and self.postedDate == other.postedDate
+        return self.url == other.url and self.posted_date == other.posted_date
 
 class RateLimitException(Exception):
     pass

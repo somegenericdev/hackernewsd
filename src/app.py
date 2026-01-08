@@ -19,73 +19,73 @@ scheduler = APScheduler()
 
 
 @app.route('/feed_hn_blog.xml')
-def feedHnBlog():
-    rssPath = Path.home() / ".hackernewsdrss_hn_blog"
-    if os.path.exists(rssPath):
-        with open(rssPath, "r", encoding="utf-8") as rss:
+def feed_hn_blog():
+    rss_path = Path.home() / ".hackernewsdrss_hn_blog"
+    if os.path.exists(rss_path):
+        with open(rss_path, "r", encoding="utf-8") as rss:
             return Response(rss.read(), mimetype='text/xml')
     else:
         return render_template_string('PageNotFound {{ errorCode }}', errorCode='404'), 404
 
 
 @app.route('/feed_hn.xml')
-def feedHn():
-    rssPath = Path.home() / ".hackernewsdrss_hn"
-    if os.path.exists(rssPath):
-        with open(rssPath, "r", encoding="utf-8") as rss:
+def feed_hn():
+    rss_path = Path.home() / ".hackernewsdrss_hn"
+    if os.path.exists(rss_path):
+        with open(rss_path, "r", encoding="utf-8") as rss:
             return Response(rss.read(), mimetype='text/xml')
     else:
         return render_template_string('PageNotFound {{ errorCode }}', errorCode='404'), 404
 
 
 @app.route('/feed_lobsters_blog.xml')
-def feedLobstersBlog():
-    rssPath = Path.home() / ".hackernewsdrss_lobsters_blog"
-    if os.path.exists(rssPath):
-        with open(rssPath, "r", encoding="utf-8") as rss:
+def feed_lobsters_blog():
+    rss_path = Path.home() / ".hackernewsdrss_lobsters_blog"
+    if os.path.exists(rss_path):
+        with open(rss_path, "r", encoding="utf-8") as rss:
             return Response(rss.read(), mimetype='text/xml')
     else:
         return render_template_string('PageNotFound {{ errorCode }}', errorCode='404'), 404
 
 
 @app.route('/feed_lobsters.xml')
-def feedLobsters():
-    rssPath = Path.home() / ".hackernewsdrss_lobsters"
-    if os.path.exists(rssPath):
-        with open(rssPath, "r", encoding="utf-8") as rss:
+def feed_lobsters():
+    rss_path = Path.home() / ".hackernewsdrss_lobsters"
+    if os.path.exists(rss_path):
+        with open(rss_path, "r", encoding="utf-8") as rss:
             return Response(rss.read(), mimetype='text/xml')
     else:
         return render_template_string('PageNotFound {{ errorCode }}', errorCode='404'), 404
 
 
 @scheduler.task('interval', id='scrapeJob', seconds=900, max_instances=1, next_run_time=datetime.now())
-def scrapeJob():
+def scrape_job():
     print('Executing scraping job.')
-    hnScraper = HackerNewsScraper()
-    hnScraper.scrape()
-    lobstersScraper = LobstersScraper()
-    lobstersScraper.scrape()
+    hn_scraper = HackerNewsScraper()
+    hn_scraper.scrape()
+    lobsters_scraper = LobstersScraper()
+    lobsters_scraper.scrape()
 
 
-def readRcFile():
-    rcFilePath = Path.home() / ".hackernewsdrc"
-    with open(rcFilePath, "r", encoding="utf-8") as rcFile:
-        return rcFile.read()
+def read_rc_file():
+    rc_file_path = Path.home() / ".hackernewsdrc"
+    with open(rc_file_path, "r", encoding="utf-8") as rc_file:
+        return rc_file.read()
 
 
-def initLogger():
-    logFilePath = str(Path.home() / ".hackernewsdlog")
+def init_logger():
+    log_file_path = str(Path.home() / ".hackernewsdlog")
 
-    if not os.path.exists(logFilePath):
-        with open(logFilePath, "w", encoding="utf-8") as logFile:
+    if not os.path.exists(log_file_path):
+        with open(log_file_path, "w", encoding="utf-8") as logFile:
             logFile.write("")
 
     log_formatter = logging.Formatter('[%(asctime)s %(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
 
-    fileHandler = RotatingFileHandler(logFilePath, mode='a', maxBytes=25 * 1024 * 1024,
+    file_handler = RotatingFileHandler(log_file_path, mode='a', maxBytes=25 * 1024 * 1024,
                                       backupCount=1, encoding=None, delay=0)
-    fileHandler.setFormatter(log_formatter)
-    fileHandler.setLevel(logging.INFO)
+    file_handler.setFormatter(log_formatter)
+    file_handler.setLevel(logging.INFO)
 
     consoleHandler = logging.StreamHandler(sys.stdout)
     consoleHandler.setFormatter(log_formatter)
@@ -94,10 +94,10 @@ def initLogger():
     rootLogger = logging.getLogger('root')
     rootLogger.setLevel(logging.INFO)
 
-    rootLogger.addHandler(fileHandler)
+    rootLogger.addHandler(file_handler)
     rootLogger.addHandler(consoleHandler)
 
-def initDb():
+def init_db():
     db = SqliteDatabase(Path.home() / "hnd.db")
     BaseModel._meta.database.initialize(db)
     db.connect()
@@ -106,10 +106,10 @@ def initDb():
 
 if __name__ == '__main__':
     print(f"Starting Hackernewsd. Python version: {sys.version}")
-    initLogger()
-    initDb()
-    rcFile = json.loads(readRcFile())
+    init_logger()
+    init_db()
+    rc_file = json.loads(read_rc_file())
     scheduler.init_app(app)
     scheduler.start()
-    serve(app, host=rcFile["host"], port=rcFile["port"])
+    serve(app, host=rc_file["host"], port=rc_file["port"])
     # app.run(port=5555)
