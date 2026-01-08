@@ -5,7 +5,7 @@ from enum import Enum
 from pathlib import Path
 from flask import Flask, render_template_string, Response
 from flask_apscheduler import APScheduler
-from hackernewsd import HackerNewsScraper
+from scrapers import HackerNewsScraper, LobstersScraper
 from waitress import serve
 import logging
 from logging import handlers
@@ -17,9 +17,9 @@ app = Flask(__name__)
 scheduler = APScheduler()
 
 
-@app.route('/feed.xml')
-def feed():
-    rssPath = Path.home() / ".hackernewsdrss"
+@app.route('/feed_hn_blog.xml')
+def feedHnBlog():
+    rssPath = Path.home() / ".hackernewsdrss_hn_blog"
     if os.path.exists(rssPath):
         with open(rssPath, "r", encoding="utf-8") as rss:
             return Response(rss.read(), mimetype='text/xml')
@@ -37,11 +37,33 @@ def feedHn():
         return render_template_string('PageNotFound {{ errorCode }}', errorCode='404'), 404
 
 
+@app.route('/feed_lobsters_blog.xml')
+def feedLobstersBlog():
+    rssPath = Path.home() / ".hackernewsdrss_lobsters_blog"
+    if os.path.exists(rssPath):
+        with open(rssPath, "r", encoding="utf-8") as rss:
+            return Response(rss.read(), mimetype='text/xml')
+    else:
+        return render_template_string('PageNotFound {{ errorCode }}', errorCode='404'), 404
+
+
+@app.route('/feed_lobsters.xml')
+def feedLobsters():
+    rssPath = Path.home() / ".hackernewsdrss_lobsters"
+    if os.path.exists(rssPath):
+        with open(rssPath, "r", encoding="utf-8") as rss:
+            return Response(rss.read(), mimetype='text/xml')
+    else:
+        return render_template_string('PageNotFound {{ errorCode }}', errorCode='404'), 404
+
+
 @scheduler.task('interval', id='scrapeJob', seconds=60, max_instances=1)
 def scrapeJob():
     print('Executing scraping job.')
-    scraper = HackerNewsScraper()
-    scraper.scrape()
+    hnScraper = HackerNewsScraper()
+    hnScraper.scrape()
+    lobstersScraper = LobstersScraper()
+    lobstersScraper.scrape()
 
 
 def readRcFile():
