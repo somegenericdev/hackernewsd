@@ -2,12 +2,12 @@ import json
 import logging
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from ssl import SSLError
 import backoff
 import requests
 from feedgen.feed import FeedGenerator
 from functional import seq
 from stopwatch import Stopwatch
+from urllib3.exceptions import MaxRetryError
 from models import Story, StoryType
 from types import SimpleNamespace
 from dtos import RateLimitException, StoryDto
@@ -22,7 +22,7 @@ class HackerNewsScraper():
         rootLogger = logging.getLogger('root')
         return rootLogger
 
-    @backoff.on_exception(backoff.fibo, SSLError)
+    @backoff.on_exception(backoff.fibo, MaxRetryError)
     def get_stories(self) -> list[StoryDto]:
         self.logger.info("Getting Hackernews' top stories")
         resp = requests.get("https://hacker-news.firebaseio.com/v0/topstories.json", timeout=30)
@@ -40,7 +40,7 @@ class HackerNewsScraper():
 
 
 
-    @backoff.on_exception(backoff.fibo, SSLError)
+    @backoff.on_exception(backoff.fibo, MaxRetryError)
     def get_story(self, storyId) -> StoryDto:
         self.logger.info(f"Getting Hackernews story #{storyId}")
         resp = requests.get(f"https://hacker-news.firebaseio.com/v0/item/{storyId}.json", timeout=30)
